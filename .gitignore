@@ -1,5 +1,45 @@
+# Environment Variables (Sensitive)
 .env
+.env.local
+
+# OAuth Credentials (Sensitive - Do Not Share)
+credentials.json
+token.json
+
+# Python
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+
+# Virtual Environment
+.venv/
+venv/
+ENV/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
 .DS_Store
+Thumbs.db
+
+# Node (if any)
 node_modules/
+
+# Logs
+*.log
+
+# Assignment PDF (already submitted separately)
+*.pdf
