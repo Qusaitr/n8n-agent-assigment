@@ -4,26 +4,11 @@ from google.adk.sessions import InMemorySessionService
 from google.genai import types
 import uuid
 from src.core.config import config
-from src.tools.gmail_tools import gmail_tools, search_emails, get_email_details, send_email
+from src.tools.gmail_tools import gmail_tools
 
-class EmailAgent:
-    """Orchestrates the AI Email Assistant using Google ADK."""
 
-    def __init__(self):
-        self.model = LiteLlm(model=config.openai_model)
-        self.system_prompt = self._get_system_prompt()
-        self.agent = self._build_agent()
-        self.session_service = InMemorySessionService()
-        self.runner = adk.Runner(
-            agent=self.agent,
-            app_name="email-assistant",
-            session_service=self.session_service,
-        )
-        self.user_id = "user_1"
-        self.session_id = None
-
-    def _get_system_prompt(self) -> str:
-        return """You are a professional AI Email Assistant.
+# Shared system prompt - Single Source of Truth
+SYSTEM_PROMPT = """You are a professional AI Email Assistant.
 
 Your process follows the **ReAct (Reason + Act)** pattern:
 1. **Thought**: Explain your reasoning for the next step.
@@ -42,13 +27,43 @@ Your process follows the **ReAct (Reason + Act)** pattern:
 - Never leak sensitive information or PII.
 - Handle "not found" scenarios gracefully by informing the user."""
 
-    def _build_agent(self):
+
+class AgentFactory:
+    """Factory class for creating ADK agents - ensures consistent agent creation."""
+    
+    _model_instance = None
+    
+    @classmethod
+    def get_model(cls) -> LiteLlm:
+        """Returns a singleton LiteLlm model instance."""
+        if cls._model_instance is None:
+            cls._model_instance = LiteLlm(model=config.openai_model)
+        return cls._model_instance
+    
+    @classmethod
+    def create_agent(cls) -> adk.Agent:
+        """Creates and returns a configured ADK Agent."""
         return adk.Agent(
             name="email_assistant_agent",
-            model=self.model,
-            instruction=self.system_prompt,
-            tools=gmail_tools  # This is already a list of functions
+            model=cls.get_model(),
+            instruction=SYSTEM_PROMPT,
+            tools=gmail_tools
         )
+
+
+class EmailAgent:
+    """Orchestrates the AI Email Assistant using Google ADK."""
+
+    def __init__(self):
+        self.agent = AgentFactory.create_agent()
+        self.session_service = InMemorySessionService()
+        self.runner = adk.Runner(
+            agent=self.agent,
+            app_name="email-assistant",
+            session_service=self.session_service,
+        )
+        self.user_id = "user_1"
+        self.session_id = None
 
     async def ensure_session(self):
         """Creates a session if one does not exist."""
